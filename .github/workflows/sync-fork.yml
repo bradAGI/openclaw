@@ -1,0 +1,21 @@
+name: Auto Sync Fork
+
+on:
+  schedule:
+    # Runs every day at 18:00 UTC
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync Fork
+        uses: wei/pull@v1
+        with:
+          # This should be your PAT, stored as a secret
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          # The branch to sync (e.g., main, master)
+          target_branch: main
+          # The upstream repository owner/name (e.g., OriginalOwner/OriginalRepo)
+          upstream_repo: 'openclaw/openclaw'
