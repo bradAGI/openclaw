@@ -32,6 +32,9 @@ Welcome to the lobster tank! 🦞
 - **Mariano Belinky** - iOS app, Security
   - GitHub: [@mbelinky](https://github.com/mbelinky) · X: [@belimad](https://x.com/belimad)
 
+- **Nimrod Gutman** - iOS app, macOS app and crustacean features
+  - GitHub: [@ngutman](https://github.com/ngutman) · X: [@theguti](https://x.com/theguti)
+
 - **Vincent Koc** - Agents, Telemetry, Hooks, Security
   - GitHub: [@vincentkoc](https://github.com/vincentkoc) · X: [@vincent_koc](https://x.com/vincent_koc)
 
@@ -56,6 +59,9 @@ Welcome to the lobster tank! 🦞
 - **Jonathan Taylor** - ACP subsystem, Gateway features/bugs, Gog/Mog/Sog CLI's, SEDMAT
   - Github [@visionik](https://github.com/visionik) · X: [@visionik](https://x.com/visionik)
     
+- **Josh Lehman** - Compaction, Tlon/Urbit subsystem
+  - Github [@jalehman](https://github.com/jalehman) · X: [@jlehman_](https://x.com/jlehman_)
+
 ## How to Contribute
 
 1. **Bugs & small fixes** → Open a PR!
