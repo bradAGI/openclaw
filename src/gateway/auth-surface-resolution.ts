@@ -75,12 +75,27 @@ export async function resolveGatewayProbeSurfaceAuth(params: {
     });
   }
 
-  if (authMode === "none" || authMode === "trusted-proxy") {
+  const envToken = trimToUndefined(env.OPENCLAW_GATEWAY_TOKEN);
+  const envPassword = trimToUndefined(env.OPENCLAW_GATEWAY_PASSWORD);
+
+  if (authMode === "none") {
     return {};
   }
 
-  const envToken = trimToUndefined(env.OPENCLAW_GATEWAY_TOKEN);
-  const envPassword = trimToUndefined(env.OPENCLAW_GATEWAY_PASSWORD);
+  if (authMode === "trusted-proxy") {
+    const password = await resolveGatewayCredential({
+      config: params.config,
+      env,
+      diagnostics,
+      path: "gateway.auth.password",
+      value: params.config.gateway?.auth?.password,
+    });
+    return password.value
+      ? withDiagnostics({ diagnostics, result: { password: password.value } })
+      : envPassword
+        ? { password: envPassword }
+        : withDiagnostics({ diagnostics, result: {} });
+  }
 
   if (authMode === "token") {
     const token = await resolveGatewayCredential({
@@ -196,7 +211,7 @@ export async function resolveGatewayInteractiveSurfaceAuth(params: {
   }
 
   const authMode = params.config.gateway?.auth?.mode;
-  if (authMode === "none" || authMode === "trusted-proxy") {
+  if (authMode === "none") {
     return {
       token: explicitToken ?? envToken,
       password: explicitPassword ?? envPassword,
@@ -250,6 +265,15 @@ export async function resolveGatewayInteractiveSurfaceAuth(params: {
         : (localPassword.unresolvedRefReason ?? "Missing gateway auth password."),
     };
   };
+
+  if (authMode === "trusted-proxy") {
+    const password = await resolvePassword();
+    return {
+      token: explicitToken ?? envToken,
+      password: password.password,
+      failureReason: password.failureReason,
+    };
+  }
 
   if (authMode === "password") {
     const password = await resolvePassword();

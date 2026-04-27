@@ -42,7 +42,10 @@ export function shouldResolveGatewayAuthSecretRef(params: {
   if (params.mode === (isTokenPath ? "token" : "password")) {
     return true;
   }
-  if (params.mode === "token" || params.mode === "none" || params.mode === "trusted-proxy") {
+  if (params.mode === "trusted-proxy") {
+    return !isTokenPath;
+  }
+  if (params.mode === "token" || params.mode === "none") {
     return false;
   }
   if (params.mode === "password") {

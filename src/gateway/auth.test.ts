@@ -139,6 +139,22 @@ describe("gateway auth", () => {
     });
   });
 
+  it("treats trusted-proxy password as shared fallback auth", () => {
+    expect(
+      resolveEffectiveSharedGatewayAuth({
+        authConfig: {
+          mode: "trusted-proxy",
+          trustedProxy: { userHeader: "x-user" },
+          password: "config-password",
+        },
+        env: {} as NodeJS.ProcessEnv,
+      }),
+    ).toEqual({
+      mode: "password",
+      secret: "config-password",
+    });
+  });
+
   it.each([
     { name: "Forwarded", headers: { forwarded: "for=203.0.113.10;proto=https" } },
     { name: "X-Forwarded-For", headers: { "x-forwarded-for": "203.0.113.10" } },
@@ -901,7 +917,10 @@ describe("trusted-proxy auth", () => {
   describe("local-direct trusted-proxy requests", () => {
     function authorizeLocalDirect(options?: {
       token?: string;
+      password?: string;
       connectToken?: string;
+      connectPassword?: string;
+      rateLimiter?: AuthRateLimiter;
       trustedProxy?: GatewayConnectInput["auth"]["trustedProxy"];
       trustedProxies?: string[];
     }) {
@@ -913,9 +932,14 @@ describe("trusted-proxy auth", () => {
             ? { trustedProxy: options?.trustedProxy }
             : { trustedProxy: trustedProxyConfig }),
           token: options?.token,
+          password: options?.password,
         },
-        connectAuth: options?.connectToken ? { token: options.connectToken } : null,
+        connectAuth:
+          options?.connectToken || options?.connectPassword
+            ? { token: options.connectToken, password: options.connectPassword }
+            : null,
         trustedProxies: options?.trustedProxies ?? ["127.0.0.1"],
+        rateLimiter: options?.rateLimiter,
         req: {
           socket: { remoteAddress: "127.0.0.1" },
           headers: { host: "localhost" },
@@ -952,6 +976,38 @@ describe("trusted-proxy auth", () => {
       },
     ])("rejects local-direct request $name", async ({ options }) => {
       const res = await authorizeLocalDirect(options);
+      expect(res.ok).toBe(false);
+      expect(res.reason).toBe("trusted_proxy_loopback_source");
+    });
+
+    it("accepts configured password fallback for direct local clients", async () => {
+      const limiter = createLimiterSpy();
+      const res = await authorizeLocalDirect({
+        password: "secret", // pragma: allowlist secret
+        connectPassword: "secret", // pragma: allowlist secret
+        rateLimiter: limiter,
+      });
+      expect(res.ok).toBe(true);
+      expect(res.method).toBe("password");
+      expect(limiter.reset).toHaveBeenCalledWith("127.0.0.1", "shared-secret");
+    });
+
+    it("rejects wrong trusted-proxy password fallback credentials with rate limiting", async () => {
+      const limiter = createLimiterSpy();
+      const res = await authorizeLocalDirect({
+        password: "secret", // pragma: allowlist secret
+        connectPassword: "wrong", // pragma: allowlist secret
+        rateLimiter: limiter,
+      });
+      expect(res.ok).toBe(false);
+      expect(res.reason).toBe("password_mismatch");
+      expect(limiter.recordFailure).toHaveBeenCalledWith("127.0.0.1", "shared-secret");
+    });
+
+    it("keeps direct trusted-proxy requests fail-closed when no password is configured", async () => {
+      const res = await authorizeLocalDirect({
+        connectPassword: "secret", // pragma: allowlist secret
+      });
       expect(res.ok).toBe(false);
       expect(res.reason).toBe("trusted_proxy_loopback_source");
     });

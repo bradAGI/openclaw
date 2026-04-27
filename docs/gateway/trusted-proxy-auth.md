@@ -92,7 +92,7 @@ Implications:
 
 - Trusted-proxy auth rejects loopback-source requests (`127.0.0.1`, `::1`, loopback CIDRs).
 - Same-host loopback reverse proxies do **not** satisfy trusted-proxy auth.
-- For same-host loopback proxy setups, use token/password auth instead, or route through a non-loopback trusted proxy address that OpenClaw can verify.
+- For same-host loopback proxy setups, route through a non-loopback trusted proxy address that OpenClaw can verify. Direct local OpenClaw clients may use `gateway.auth.password` as a fallback when they cannot pass through the proxy.
 - Non-loopback Control UI deployments still need explicit `gateway.controlUi.allowedOrigins`.
 - **Forwarded-header evidence overrides loopback locality.** If a request arrives on loopback but carries `X-Forwarded-For` / `X-Forwarded-Host` / `X-Forwarded-Proto` headers pointing at a non-local origin, that evidence disqualifies the loopback locality claim. The request is treated as remote for pairing, trusted-proxy auth, and Control UI device-identity gating. This prevents a same-host loopback proxy from laundering forwarded-header identity into trusted-proxy auth.
   </Warning>
@@ -293,7 +293,7 @@ If you see a `mixed_trusted_proxy_token` error on startup:
 - Remove the shared token when using trusted-proxy mode, or
 - Switch `gateway.auth.mode` to `"token"` if you intend token-based auth.
 
-Loopback trusted-proxy auth also fails closed: same-host callers must supply the configured identity headers through a trusted proxy instead of being silently authenticated.
+Loopback trusted-proxy identity headers still fail closed: same-host callers are not silently trusted just because they run locally. If direct local tools need to bypass the proxy, configure `gateway.auth.password` or `OPENCLAW_GATEWAY_PASSWORD`; OpenClaw will try trusted-proxy auth first, then accept that password only when the proxy check fails.
 
 ## Operator scopes header
 
@@ -326,7 +326,7 @@ Before enabling trusted-proxy auth, verify:
 - [ ] **TLS termination**: Your proxy handles TLS; users connect via HTTPS.
 - [ ] **allowedOrigins is explicit**: Non-loopback Control UI uses explicit `gateway.controlUi.allowedOrigins`.
 - [ ] **allowUsers is set** (recommended): Restrict to known users rather than allowing anyone authenticated.
-- [ ] **No mixed token config**: Do not set both `gateway.auth.token` and `gateway.auth.mode: "trusted-proxy"`.
+- [ ] **No mixed token config**: Do not set both `gateway.auth.token` and `gateway.auth.mode: "trusted-proxy"`; use `gateway.auth.password` for direct internal clients that cannot go through the proxy.
 
 ## Security audit
 

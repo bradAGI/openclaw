@@ -283,11 +283,25 @@ describe("resolveGatewayCredentialsFromConfig", () => {
     });
   });
 
-  it("ignores unresolved local password ref when local auth mode is trusted-proxy", () => {
-    const resolved = resolveLocalModeWithUnresolvedPassword("trusted-proxy");
+  it("fails closed when trusted-proxy local password ref is unresolved", () => {
+    expect(() => resolveLocalModeWithUnresolvedPassword("trusted-proxy")).toThrow(
+      "gateway.auth.password",
+    );
+  });
+
+  it("resolves local password for trusted-proxy fallback", () => {
+    const resolved = resolveGatewayCredentialsFromConfig({
+      cfg: cfg({
+        gateway: {
+          mode: "local",
+          auth: { mode: "trusted-proxy", password: "local-password" }, // pragma: allowlist secret
+        },
+      }),
+      env: {} as NodeJS.ProcessEnv,
+    });
     expect(resolved).toEqual({
       token: undefined,
-      password: undefined,
+      password: "local-password", // pragma: allowlist secret
     });
   });
 

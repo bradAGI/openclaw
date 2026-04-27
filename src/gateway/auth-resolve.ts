@@ -123,5 +123,11 @@ export function resolveEffectiveSharedGatewayAuth(params: {
       secret: resolvedAuth.password,
     };
   }
+  if (resolvedAuth.mode === "trusted-proxy" && resolvedAuth.password) {
+    return {
+      mode: "password",
+      secret: resolvedAuth.password,
+    };
+  }
   return null;
 }
