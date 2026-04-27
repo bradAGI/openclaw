@@ -335,7 +335,7 @@ describe("codex command", () => {
     ).resolves.toEqual({
       text: [
         "Codex diagnostics sent for thread thread-123.",
-        "Inspect locally: codex resume thread-123",
+        "Inspect locally: codex resume 'thread-123'",
         "Included Codex logs and spawned Codex subthreads when available.",
       ].join("\n"),
     });
@@ -349,8 +349,6 @@ describe("codex command", () => {
         includeLogs: true,
         tags: {
           source: "openclaw-diagnostics",
-          openclawSessionId: "session-1",
-          openclawSessionKey: "agent:main:session-1",
           channel: "test",
         },
       },
@@ -380,7 +378,7 @@ describe("codex command", () => {
     ).resolves.toEqual({
       text: [
         "Codex diagnostics sent for thread thread-456.",
-        "Inspect locally: codex resume thread-456",
+        "Inspect locally: codex resume 'thread-456'",
         "Included Codex logs and spawned Codex subthreads when available.",
       ].join("\n"),
     });
@@ -394,6 +392,30 @@ describe("codex command", () => {
         includeLogs: true,
       }),
     );
+  });
+
+  it("shell-quotes diagnostics resume hints", async () => {
+    const sessionFile = path.join(tempDir, "session.jsonl");
+    await fs.writeFile(
+      `${sessionFile}.codex-app-server.json`,
+      JSON.stringify({ schemaVersion: 1, threadId: "thread-123'; echo bad", cwd: "/repo" }),
+    );
+    const safeCodexControlRequest = vi.fn(async () => ({
+      ok: true as const,
+      value: { threadId: "thread-123'; echo bad" },
+    }));
+
+    await expect(
+      handleCodexCommand(createContext("diagnostics", sessionFile), {
+        deps: createDeps({ safeCodexControlRequest }),
+      }),
+    ).resolves.toEqual({
+      text: [
+        "Codex diagnostics sent for thread thread-123'; echo bad.",
+        "Inspect locally: codex resume 'thread-123'\\''; echo bad'",
+        "Included Codex logs and spawned Codex subthreads when available.",
+      ].join("\n"),
+    });
   });
 
   it("explains diagnostics when no Codex thread is attached", async () => {
