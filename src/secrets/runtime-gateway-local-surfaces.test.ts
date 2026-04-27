@@ -139,15 +139,25 @@ describe("secrets runtime gateway local surfaces", () => {
     ).rejects.toThrow(/MISSING_GATEWAY_TOKEN_REF/);
   });
 
-  it("treats gateway.auth.password ref as inactive when auth mode is trusted-proxy", async () => {
-    await expectInactiveGatewayPassword({
-      gateway: {
-        auth: {
-          mode: "trusted-proxy",
-          password: { source: "env", provider: "default", id: "GATEWAY_PASSWORD_REF" },
+  it("treats gateway.auth.password ref as active when auth mode is trusted-proxy", async () => {
+    const snapshot = await prepareSecretsRuntimeSnapshot({
+      config: asConfig({
+        gateway: {
+          auth: {
+            mode: "trusted-proxy",
+            password: { source: "env", provider: "default", id: "GATEWAY_PASSWORD_REF" },
+          },
         },
+      }),
+      env: {
+        GATEWAY_PASSWORD_REF: "resolved-gateway-password",
       },
+      agentDirs: ["/tmp/openclaw-agent-main"],
+      loadAuthStore: () => ({ version: 1, profiles: {} }),
     });
+
+    expect(snapshot.config.gateway?.auth?.password).toBe("resolved-gateway-password");
+    expect(snapshot.warnings.map((warning) => warning.path)).not.toContain("gateway.auth.password");
   });
 
   it("treats gateway.auth.password ref as inactive when remote token is configured", async () => {

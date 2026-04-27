@@ -103,16 +103,16 @@ export function evaluateGatewayAuthSurfaceStates(params: {
     if (!auth) {
       return "gateway.auth is not configured.";
     }
-    if (plan.passwordCanWin) {
-      return plan.authMode === "password"
-        ? 'gateway.auth.mode is "password".'
-        : "no token source can win, so password auth can win.";
+    if (plan.localPasswordCanWin) {
+      if (plan.authMode === "password") {
+        return 'gateway.auth.mode is "password".';
+      }
+      if (plan.authMode === "trusted-proxy") {
+        return 'gateway.auth.mode is "trusted-proxy"; password fallback can serve direct local clients.';
+      }
+      return "no token source can win, so password auth can win.";
     }
-    if (
-      plan.authMode === "token" ||
-      plan.authMode === "none" ||
-      plan.authMode === "trusted-proxy"
-    ) {
+    if (plan.authMode === "token" || plan.authMode === "none") {
       return `gateway.auth.mode is "${plan.authMode}".`;
     }
     if (plan.envToken) {
@@ -221,7 +221,7 @@ export function evaluateGatewayAuthSurfaceStates(params: {
     }),
     "gateway.auth.password": createState({
       path: "gateway.auth.password",
-      active: plan.passwordCanWin,
+      active: plan.localPasswordCanWin,
       reason: authPasswordReason,
       hasSecretRef: plan.localPassword.hasSecretRef,
     }),

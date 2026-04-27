@@ -123,10 +123,13 @@ export function createGatewayCredentialPlan(params: {
   const localTokenCanWin =
     authMode !== "password" && authMode !== "none" && authMode !== "trusted-proxy";
   const tokenCanWin = Boolean(envToken || localToken.configured || remoteToken.configured);
-  const passwordCanWin =
+  const localPasswordCanWin =
     authMode === "password" ||
     authMode === "trusted-proxy" ||
     (authMode !== "token" && authMode !== "none" && !tokenCanWin);
+  const passwordCanWin =
+    authMode === "password" ||
+    (authMode !== "token" && authMode !== "none" && authMode !== "trusted-proxy" && !tokenCanWin);
   const localTokenSurfaceActive =
     localTokenCanWin &&
     !envToken &&
@@ -151,7 +154,7 @@ export function createGatewayCredentialPlan(params: {
     remoteToken,
     remotePassword,
     localTokenCanWin,
-    localPasswordCanWin: passwordCanWin,
+    localPasswordCanWin,
     localTokenSurfaceActive,
     tokenCanWin,
     passwordCanWin,
